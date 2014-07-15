@@ -1,0 +1,1 @@
+console.log('Place your js files under javascripts folder.');
