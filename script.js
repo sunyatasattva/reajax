@@ -34,7 +34,7 @@ Remix.$(document).on('click', '.r-popupLink', function(e){
 	e.preventDefault();
 	var _target = Remix.$(this).attr('href');
 	Remix.$(_target).removeClass("r-popupInactive").addClass("r-popupActive");
-	Remix.$('.r-overlay').show();
+	Remix.$('.r-overlay, .r-extraDiv').removeClass('r-hidden');
 });
 Remix.$(document).on('click', '.r-user', function(e){
 	e.preventDefault();
@@ -48,6 +48,9 @@ Remix.$(document).on('click touchend', '.r-overlay', function(){
 	if (!touchFlag) {
 		Remix.$('.r-popupActive').addClass("r-popupInactive").removeClass("r-popupActive");
 		Remix.$(".loginIframe").addClass("r-hidden");
-		Remix.$(this).hide();
+		Remix.$(this).addClass('r-hidden');
+		setTimeout(function(){
+			Remix.$('.r-extraDiv').addClass('r-hidden');
+		},500);
 	};
 });
