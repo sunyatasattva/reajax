@@ -29,14 +29,25 @@ Remix.$(document).on('click', '.r-collapsHeading', function(e){
 });
 
 /*for popup*/
+var touchFlag = false;
 Remix.$(document).on('click', '.r-popupLink', function(e){
 	e.preventDefault();
 	var _target = Remix.$(this).attr('href');
 	Remix.$(_target).removeClass("r-popupInactive").addClass("r-popupActive");
 	Remix.$('.r-overlay').show();
 });
-Remix.$(document).on('click', '.r-overlay', function(e){
+Remix.$(document).on('click', '.r-user', function(e){
 	e.preventDefault();
-	Remix.$('.r-popupActive').addClass("r-popupInactive").removeClass("r-popupActive");
-	Remix.$(this).hide();
+	Remix.$(".loginIframe").removeClass("r-hidden");
+	Remix.$('.r-overlay').show();
+});
+Remix.$(document).on('touchmove', '.r-overlay', function(){
+	touchFlag = true;
+});
+Remix.$(document).on('click touchend', '.r-overlay', function(){
+	if (!touchFlag) {
+		Remix.$('.r-popupActive').addClass("r-popupInactive").removeClass("r-popupActive");
+		Remix.$(".loginIframe").addClass("r-hidden");
+		Remix.$(this).hide();
+	};
 });
