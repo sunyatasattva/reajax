@@ -38,8 +38,7 @@ Remix.$(document).on('click', '.r-popupLink', function(e){
 });
 Remix.$(document).on('click', '.r-user', function(e){
 	e.preventDefault();
-	Remix.$(".loginIframe").removeClass("r-hidden");
-	Remix.$('.r-overlay').show();
+	Remix.$(".loginIframe, .r-overlay, .r-extraDiv").removeClass("r-hidden");
 });
 Remix.$(document).on('touchmove', '.r-overlay', function(){
 	touchFlag = true;
