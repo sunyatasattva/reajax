@@ -1,39 +1,223 @@
 (function(XHR) {
     "use strict";
 
-    var open = XHR.prototype.open;
-    var send = XHR.prototype.send;
+    var open = XHR.prototype.open,
+        send = XHR.prototype.send;
 
     XHR.prototype.open = function(method, url, async, user, pass) {
-      this._url = url;
-      open.call(this, method, url, async, user, pass);
+        this._url = url;
+        open.call(this, method, url, async, user, pass);
     };
 
     XHR.prototype.send = function(data) {
-      var self = this;
-      var oldOnReadyStateChange;
-      var url = this._url;
+        var self = this,
+            oldOnReadyStateChange,
+            url = this._url;
 
-      function onReadyStateChange() {
-          if(self.readyState == 4 /* complete */) {
-              Remix.$(document).trigger('ajaxReceived', self);
-          }
+        function onReadyStateChange() {
+            if(self.readyState === 4) { // complete
+                Remix.$(document).trigger('ajaxReceived', self);
+            }
 
-          if(oldOnReadyStateChange) {
-              oldOnReadyStateChange();
-          }
-      }
+            if(oldOnReadyStateChange) {
+                oldOnReadyStateChange();
+            }
+        }
 
-      /* Set xhr.noIntercept to true to disable the interceptor for a particular call */
-      if(!this.noIntercept) {            
-          if(this.addEventListener) {
-              this.addEventListener("readystatechange", onReadyStateChange, false);
-          } else {
-              oldOnReadyStateChange = this.onreadystatechange; 
-              this.onreadystatechange = onReadyStateChange;
-          }
-      }
+        /* Set xhr.noIntercept to true to disable the interceptor for a particular call */
+        if(!this.noIntercept) {            
+            if(this.addEventListener) {
+                this.addEventListener("readystatechange", onReadyStateChange, false);
+            } else {
+                oldOnReadyStateChange = this.onreadystatechange; 
+                this.onreadystatechange = onReadyStateChange;
+            }
+        }
 
-      send.call(this, data);
+        send.call(this, data);
     }
 })(XMLHttpRequest);
+
+// @todo  most of this stuff shouldn't be public API
+ReAjax = {
+    /*
+     * Handles the AJAX response.
+     *
+     * Parses the response, seeing if it matches with any of the panels and, if so,
+     * applies the appropriate transformation and renders the appropriate template.
+     *
+     * @return  void
+     */
+    ajaxHandler: function(data){
+        var matched,
+            remixedData,
+            currentTemplate = ReAjax.config.currentTemplate,
+            currentPanels   = ReAjax.config.panels;
+
+        // Iterates through each defined panel and see if the response matches.
+        // If it does, render the template in the appropriate element.
+        currentPanels.forEach(function(panel){
+            var $matchedElements = Remix.$(panel.matcher),
+                context          = { content: {} };
+
+            if( !$matchedElements.length ) return false;
+            else matched = panel;
+
+            if( !Remix.$(panel.selector).length ){
+                console.warn("Missing container element for panel " + panel.selector);
+                return false;
+            };
+            
+            remixedData = panel.transform(Remix.$);                
+            context.content[panel.context] = remixedData;
+
+            dust.render(panel.template, context, function(err, output){
+                Remix.$(panel.selector).replaceWith(output);
+            });
+        });
+
+        if( !matched )
+            console.warn("Some AJAX was received, but no panel matched the response");
+        else {
+            console.group("AJAX response received");
+            console.log("Original data:", data.data);
+            console.log("Matched panel:", matched);
+            console.log("Processed data:", remixedData);
+            console.groupEnd();
+        }
+    },
+    /*
+     * Binds the Ajax transformation handler to the `ajaxReceived` event.
+     *
+     * @return  void
+     */
+    bindAjaxTransform: function(){
+        Remix.$(document).on('ajaxReceived', function(data){
+            ReAjax.ajaxHandler(data);
+        });
+    },
+    config: {},
+    getPanelsForTemplate: function(template){
+        if( !ReAjax.templates[template] ){
+            console.warn("No configuration for current template: " + template);
+            return false;
+        };
+        
+        var panelsConfiguration = ReAjax.templates[template].panels,
+            panels              = [];
+
+        // If it's a string, we assume it's just one panel with the
+        // default configuration
+        if( typeof panelsConfiguration === 'string' ){
+            panels.push( ReAjax.panelDefaults( panelsConfiguration, template ) );
+        }
+        // If it's an array, we iterate through each of the elements
+        else if( Array.isArray(panelsConfiguration) ){
+            panelsConfiguration.forEach(function(panel){
+                panels.push( ReAjax.panelDefaults( panel, template ) );
+            })
+        }
+        // We throw an error in the console if it's neither
+        else {
+            console.error("Error in panels configuration for " + template + " template: expecting String or Array")
+        }
+
+        return panels;
+    },
+    /*
+     * Initialization function.
+     *
+     * Parses the configuration and binds the transformation event.
+     *
+     * @return  void
+     */
+    init: function(){
+        if( ReAjax.initialized ) return false; // Don't initialize twice
+        
+        var config = ReAjax.parseConfiguration();
+
+        ReAjax.config = Remix.$.extend( ReAjax.config, config );
+        ReAjax.bindAjaxTransform();
+        
+        ReAjax.initialized = true;
+    },
+    /*
+     * Already initialized
+     */
+    initialized: false,
+    /*
+     * Returns a default panel object.
+     *
+     * The `panel` argument can either be a string or an object. In the case of it
+     * being a string, ReAjax will look for an element with the Id of the string
+     * as the container element to fill up with the Remixed data from AJAX (Remixed
+     * through a function of the same name under `Remix.$`, and a template partial
+     * of the same name, starting with an underscore).
+     *
+     * Otherwise, if the argument provided is an object, the object **must** contain
+     * all three properties `selector`, `template` and `transform`.
+     *
+     * Panel data will be accessible through the `context` property once properly
+     * transformed. Said property defaults to the string passed, or to the `template`.
+     *
+     * The `matcher` property of the object is the element to compare the AJAX response
+     * against before applying the transformation function. If not specified, ReAjax will
+     * look for a parameter called `globalMatcher` under the current template, which is
+     * the default fallback matcher. If none is provided, the panel will basically be
+     * never updated.
+     *
+     * @param  {str/obj}  panel  A string for the panel name or a fully defined object.
+     * @return {obj}  The panel object.
+     */
+    panelDefaults: function(panel, template){
+        var Panel = function(args){
+            if( typeof args === 'string' ){
+                var str = args; // Should sanitize
+
+                this.context   = str;
+                this.matcher   = ReAjax.templates[template].globalMatcher || null;
+                this.selector  = '#' + str;
+                this.template  = '_' + str;
+                this.transform = Remix.$[this.template];
+            }
+            else if( args.selector && args.template && args.transform ){
+                this.context   = args.context || args.template;
+                this.matcher   = args.matcher || ReAjax.templates[template].globalMatcher || null;
+                this.selector  = args.selector;
+                this.template  = args.template;
+                this.transform = args.transform;
+            }
+            else{
+                console.error("Missing or invalid properties of panel", args);
+            }
+            
+            if( !this.matcher )
+                console.warn("No matcher found for panel " + this.selector + ", it will never be updated on AJAX.");
+        }
+        
+        return new Panel(panel);
+    },
+    /*
+     * Parses the configuration file
+     *
+     * Stores the following information inside the `config` property:
+     *    - {str}    `currentTemplate`    The name of the current template.
+     *    - {arr}    `panels`             An array of panels objects.
+     *
+     * @return {obj}  The config object.
+     */
+    parseConfiguration: function(){
+        // This should be done more reliably through the use of Remix parameters
+        var currentTemplate = $('html').first().data('remix-template'),
+            config = {
+                currentTemplate: currentTemplate,
+                panels: ReAjax.getPanelsForTemplate(currentTemplate)
+            }
+        
+        return config;
+    }
+};
+
+Remix.$(document).ready(function($){
+    ReAjax.init();
+});

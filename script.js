@@ -53,15 +53,3 @@ Remix.$(document).on('click touchend', '.r-overlay', function(){
 		},500);
 	};
 });
-
-/*
- * ReAjax
- */
-
-Remix.$(document).on('ajaxReceived', function(data) {
-    var remixedData = Remix.$._bookingToolStep1(Remix.$);
-    
-    dust.render('_bookingToolStep1', { content: { bookingTool: remixedData } }, function(err, output){
-        Remix.$('#bookingTool').replaceWith(output);
-    });
-});
