@@ -71,8 +71,20 @@ ReAjax = {
             remixedData = panel.transform(Remix.$);                
             context.content[panel.context] = remixedData;
 
+            /*
+             * We render the template and replace the panel element with the template data.
+             * After that, we trigger the registered callback. Finally we trigger
+             * a `reAjaxDone` event on `document`, passing the panel DOM object and the panel
+             * object as arguments.
+             */
             dust.render(panel.template, context, function(err, output){
-                Remix.$(panel.selector).replaceWith(output);
+                var $panel = Remix.$(panel.selector);
+                $panel.replaceWith(output);
+                
+                if( typeof panel.callback === "function" )
+                    panel.callback.call($panel, remixedData, data.data);
+                    
+                Remix.$(document).trigger('reAjaxDone', [ $panel, panel ]);
             });
         });
 
@@ -166,6 +178,13 @@ ReAjax = {
      * the default fallback matcher. If none is provided, the panel will basically be
      * never updated.
      *
+     * The callback is called after the panel is updated. It can be defined as a global
+     * callback valid for the whole template, or as a local callback valid only for the
+     * specified panel (in which case it overrides the global callback, if you want to
+     * keep it, you'll need to call it manually inside your callback). The callback value
+     * for `this` is the DOM element, and two other arguments are passed: the remixed data
+     * and the original data. @see ajaxHandler.
+     *
      * @param  {str/obj}  panel  A string for the panel name or a fully defined object.
      * @return {obj}  The panel object.
      */
@@ -174,6 +193,7 @@ ReAjax = {
             if( typeof args === 'string' ){
                 var str = args; // Should sanitize
 
+                this.callback  = ReAjax.templates[template].callback || null;
                 this.context   = str;
                 this.matcher   = ReAjax.templates[template].globalMatcher || null;
                 this.selector  = '#' + str;
@@ -181,6 +201,7 @@ ReAjax = {
                 this.transform = Remix.$[this.template];
             }
             else if( args.selector && args.template && args.transform ){
+                this.callback  = args.callback || ReAjax.templates[template].callback || null;
                 this.context   = args.context || args.template;
                 this.matcher   = args.matcher || ReAjax.templates[template].globalMatcher || null;
                 this.selector  = args.selector;
