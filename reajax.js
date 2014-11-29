@@ -78,13 +78,13 @@ ReAjax = {
              * object as arguments.
              */
             dust.render(panel.template, context, function(err, output){
-                var $panel = Remix.$(panel.selector);
-                $panel.replaceWith(output);
-                
+                var $output = Remix.$(output);
+                Remix.$(panel.selector).replaceWith($output);
+
                 if( typeof panel.callback === "function" )
-                    panel.callback.call($panel, remixedData, data.data);
+                    panel.callback.call($output, remixedData, data.data);
                     
-                Remix.$(document).trigger('reAjaxDone', [ $panel, panel ]);
+                Remix.$(document).trigger('reAjaxDone', [ $output, panel ]);
             });
         });
 
