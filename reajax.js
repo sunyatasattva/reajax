@@ -46,6 +46,7 @@ ReAjax = {
      * Parses the response, seeing if it matches with any of the panels and, if so,
      * applies the appropriate transformation and renders the appropriate template.
      *
+     * @todo  Allow matcher to be a function
      * @return  void
      */
     ajaxHandler: function(data){
@@ -229,7 +230,7 @@ ReAjax = {
      */
     parseConfiguration: function(){
         // This should be done more reliably through the use of Remix parameters
-        var currentTemplate = $('html').first().data('remix-template'),
+        var currentTemplate = Remix.$('html').first().data('remix-template'),
             config = {
                 currentTemplate: currentTemplate,
                 panels: ReAjax.getPanelsForTemplate(currentTemplate)
