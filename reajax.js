@@ -113,7 +113,7 @@ ReAjax = {
     getPanelsForTemplate: function(template){
         if( !ReAjax.templates[template] ){
             console.warn("No configuration for current template: " + template);
-            return false;
+            return [];
         };
         
         var panelsConfiguration = ReAjax.templates[template].panels,
