@@ -204,7 +204,7 @@ ReAjax = {
             else if( args.selector && args.template && args.transform ){
                 this.callback  = args.callback || ReAjax.templates[template].callback || null;
                 this.context   = args.context || args.template;
-                this.matcher   = args.matcher || ReAjax.templates[template].globalMatcher || null;
+                this.matcher   = args.matcher || args.selector || ReAjax.templates[template].globalMatcher || null;
                 this.selector  = args.selector;
                 this.template  = args.template;
                 this.transform = args.transform;
