@@ -83,7 +83,7 @@ ReAjax = {
                 Remix.$(panel.selector).replaceWith($output);
 
                 if( typeof panel.callback === "function" )
-                    panel.callback.call($output, remixedData, data.data);
+                    panel.callback.call($output, panel, remixedData, data.data);
                     
                 Remix.$(document).trigger('reAjaxDone', [ $output, panel ]);
             });
