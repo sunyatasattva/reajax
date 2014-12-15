@@ -14,6 +14,8 @@
             oldOnReadyStateChange,
             url = this._url;
 
+        Remix.$(document).trigger('ajaxBefore', self);
+        
         function onReadyStateChange() {
             if(self.readyState === 4) { // complete
                 Remix.$(document).trigger('ajaxReceived', self);
@@ -186,6 +188,7 @@ ReAjax = {
      * for `this` is the DOM element, and two other arguments are passed: the remixed data
      * and the original data. @see ajaxHandler.
      *
+     * @todo  Check if template is registered.
      * @param  {str/obj}  panel  A string for the panel name or a fully defined object.
      * @return {obj}  The panel object.
      */
