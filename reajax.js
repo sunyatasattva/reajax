@@ -65,9 +65,6 @@ ReAjax = {
                 matched = panel;
             else
                 return false;
-            
-            if( !$matchedElements.length ) return false;
-            else matched = panel;
 
             if( !Remix.$(panel.selector).length ){
                 console.warn("Missing container element for panel " + panel.selector);
