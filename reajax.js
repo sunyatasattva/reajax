@@ -61,7 +61,8 @@ ReAjax = {
         currentPanels.forEach(function(panel){
             var context = { content: {} };
             
-            if( typeof panel.matcher === 'function' && panel.matcher.call(panel) || Remix.$(panel.matcher).length )
+            if( typeof panel.matcher === 'function' && panel.matcher.call(panel) ||
+                typeof panel.matcher === 'string' && Remix.$(panel.matcher).length )
                 matched = panel;
             else
                 return false;
