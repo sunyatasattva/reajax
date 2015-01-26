@@ -48,7 +48,6 @@ ReAjax = {
      * Parses the response, seeing if it matches with any of the panels and, if so,
      * applies the appropriate transformation and renders the appropriate template.
      *
-     * @todo  Allow matcher to be a function
      * @return  void
      */
     ajaxHandler: function(data){
@@ -60,9 +59,13 @@ ReAjax = {
         // Iterates through each defined panel and see if the response matches.
         // If it does, render the template in the appropriate element.
         currentPanels.forEach(function(panel){
-            var $matchedElements = Remix.$(panel.matcher),
-                context          = { content: {} };
-
+            var context = { content: {} };
+            
+            if( typeof panel.matcher === 'function' && panel.matcher.call(panel) || Remix.$(panel.matcher).length )
+                matched = panel;
+            else
+                return false;
+            
             if( !$matchedElements.length ) return false;
             else matched = panel;
 
