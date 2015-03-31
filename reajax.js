@@ -51,29 +51,19 @@ ReAjax = {
      * @return  void
      */
     ajaxHandler: function(data){
-        var matched,
-            remixedData,
-            currentTemplate = ReAjax.config.currentTemplate,
-            currentPanels   = ReAjax.config.panels;
-
-        // Iterates through each defined panel and see if the response matches.
-        // If it does, render the template in the appropriate element.
-        currentPanels.forEach(function(panel){
-            var context = { content: {} };
-            
-            if( typeof panel.matcher === 'function' && panel.matcher.call(panel) ||
-                typeof panel.matcher === 'string' && Remix.$(panel.matcher).length )
-                matched = panel;
-            else
+        var matched = ReAjax.getMatchedPanel(),
+            context = { content: {} },
+            remixedData;
+        
+        if( matched ){
+            // @todo matched.selector should also be maybe a function
+            if( !Remix.$(matched.selector).length ){
+                console.warn("Missing container element for panel " + matched.selector);
                 return false;
-
-            if( !Remix.$(panel.selector).length ){
-                console.warn("Missing container element for panel " + panel.selector);
-                return false;
-            };
+            }
             
-            remixedData = panel.transform(Remix.$);                
-            context.content[panel.context] = remixedData;
+            remixedData = matched.transform(Remix.$);                
+            context.content[matched.context] = remixedData;
 
             /*
              * We render the template and replace the panel element with the template data.
@@ -81,26 +71,24 @@ ReAjax = {
              * a `reAjaxDone` event on `document`, passing the panel DOM object and the panel
              * object as arguments.
              */
-            dust.render(panel.template, context, function(err, output){
+            dust.render(matched.template, context, function(err, output){
                 var $output = Remix.$(output);
-                Remix.$(panel.selector).replaceWith($output);
+                Remix.$(matched.selector).replaceWith($output);
 
-                if( typeof panel.callback === "function" )
-                    panel.callback.call($output, panel, remixedData, data.data);
-                    
-                Remix.$(document).trigger('reAjaxDone', [ $output, panel ]);
+                if( typeof matched.callback === "function" )
+                    matched.callback.call($output, matched, remixedData, data.data);
+
+                Remix.$(document).trigger('reAjaxDone', [ $output, matched ]);
             });
-        });
-
-        if( !matched )
-            console.warn("Some AJAX was received, but no panel matched the response");
-        else {
+            
             console.group("AJAX response received");
             console.log("Original data:", data.data);
             console.log("Matched panel:", matched);
             console.log("Processed data:", remixedData);
             console.groupEnd();
         }
+        else
+            console.warn("Some AJAX was received, but no panel matched the response");
     },
     /*
      * Binds the Ajax transformation handler to the `ajaxReceived` event.
@@ -113,6 +101,29 @@ ReAjax = {
         });
     },
     config: {},
+    getMatchedPanel: function(){
+        var currentPanels = ReAjax.config.panels,
+            matched;
+        
+        // Iterates through each defined panel and see if the response matches.
+        // If it does, render the template in the appropriate element.
+        matched = currentPanels.filter(function(panel){
+            var context = { content: {} };
+            
+            // We check if the panel matcher is a function, in that case, we call it
+            // and see if it returns true. Otherwise, if it's a string, we query the
+            // DOM and see if the matcher is present.
+            //
+            // @todo we should query the response, though, no?
+            if( typeof panel.matcher === 'function' && panel.matcher.call(panel) ||
+                typeof panel.matcher === 'string' && Remix.$(panel.matcher).length )
+                return true;
+            else
+                return false;
+        });
+        
+        return matched[0];
+    },
     getPanelsForTemplate: function(template){
         if( !ReAjax.templates[template] ){
             console.warn("No configuration for current template: " + template);
