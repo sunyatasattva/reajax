@@ -1,42 +1,49 @@
-(function(XHR) {
+(function(XHR, $) {
     "use strict";
 
     var open = XHR.prototype.open,
         send = XHR.prototype.send;
 
-    XHR.prototype.open = function(method, url, async, user, pass) {
-        Remix.$(document).trigger('ajaxBefore', self);
-        open.call(this, method, url, async, user, pass);
-    };
+    $.fn.reAjax = function(){
+        //@todo Add a global disable which restores the old callbacks
 
-    XHR.prototype.send = function(data) {
-        var self = this,
-            oldOnReadyStateChange,
-            url = this._url;
+        XHR.prototype.open = function(method, url, async, user, pass) {
+            Remix.$(document).trigger('ajaxBefore', self);
+            open.call(this, method, url, async, user, pass);
+        };
         
-        function onReadyStateChange() {
-            if(self.readyState === 4) { // complete
-                Remix.$(document).trigger('ajaxReceived', self);
+        XHR.prototype.send = function(data) {
+            var self = this,
+                oldOnReadyStateChange,
+                url = this._url;
+
+            function onReadyStateChange() {
+                if(self.readyState === 4) { // complete
+                    $(document).trigger('ajaxReceived', self);
+                }
+
+                if(oldOnReadyStateChange) {
+                    oldOnReadyStateChange();
+                }
             }
 
-            if(oldOnReadyStateChange) {
-                oldOnReadyStateChange();
+            /* Set xhr.noIntercept to true to disable the interceptor for a particular call */
+            if(!this.noIntercept) {            
+                if(this.addEventListener) {
+                    this.addEventListener("readystatechange", onReadyStateChange, false);
+                } else {
+                    oldOnReadyStateChange = this.onreadystatechange; 
+                    this.onreadystatechange = onReadyStateChange;
+                }
             }
+
+            send.call(this, data);
         }
 
-        /* Set xhr.noIntercept to true to disable the interceptor for a particular call */
-        if(!this.noIntercept) {            
-            if(this.addEventListener) {
-                this.addEventListener("readystatechange", onReadyStateChange, false);
-            } else {
-                oldOnReadyStateChange = this.onreadystatechange; 
-                this.onreadystatechange = onReadyStateChange;
-            }
-        }
-
-        send.call(this, data);
+        return this;
     }
-})(XMLHttpRequest);
+        
+})(window.XMLHttpRequest, Remix.$);
 
 // @todo  most of this stuff shouldn't be public API
 ReAjax = {
@@ -161,6 +168,7 @@ ReAjax = {
         
         var config = ReAjax.parseConfiguration();
 
+        Remix.$(document).reAjax(); // Activate interception
         ReAjax.config = Remix.$.extend( ReAjax.config, config );
         ReAjax.bindAjaxTransform();
         
