@@ -5,7 +5,7 @@
         send = XHR.prototype.send;
 
     XHR.prototype.open = function(method, url, async, user, pass) {
-        this._url = url;
+        Remix.$(document).trigger('ajaxBefore', self);
         open.call(this, method, url, async, user, pass);
     };
 
@@ -13,8 +13,6 @@
         var self = this,
             oldOnReadyStateChange,
             url = this._url;
-
-        Remix.$(document).trigger('ajaxBefore', self);
         
         function onReadyStateChange() {
             if(self.readyState === 4) { // complete
