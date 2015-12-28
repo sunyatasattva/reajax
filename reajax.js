@@ -1,21 +1,23 @@
 define([
     'adaptivejs/context',
-    '$'
+    '$',
+    'dust-core'
 ],
-function(Context, $) {
+function(Context, $, dust) {
 
     return {
         
         render: function(data, target, template, context, callback){
             var $body          = $('body'),
                 $tempContainer = $('<div>'),
+                newContext     = $.extend(true, {}, context),
                 remixedData;
             
             $tempContainer
                 .appendTo($body)
                 .html(data);
             
-            remixedData = Context.process(context);
+            remixedData = Context.process(newContext);
             
             $tempContainer.remove();
             
