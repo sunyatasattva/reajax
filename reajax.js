@@ -9,7 +9,7 @@ function(Context, $, dust) {
         
         render: function(data, target, template, context, callback){
             var $body          = $('body'),
-                $tempContainer = $('<div>'),
+                $tempContainer = $('<div>', { id: 'reajax-temp-container' }),
                 newContext     = $.extend(true, {}, context),
                 remixedData;
             
